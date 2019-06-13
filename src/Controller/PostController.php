@@ -72,13 +72,53 @@ class PostController extends Controller
     }
 
     /**
-     * @Route("/posts/{id}/edit")
-     * @Method({"GET"})
+     * @Route("/posts/{id}/edit", name="edit")
+     * @Method({"GET", "POST"})
      */
-    public function edit($id)
+    public function edit(Request $request, $id)
+    {
+        $post = new Post();
+        $post = $this->getDoctrine()->getRepository(Post::class)->find($id);
+
+        $form = $this->createFormBuilder($post)
+            ->add('title', TextType::class, array('attr' =>
+                array('class' => 'form-control')
+            ))
+            ->add('description', TextareaType::class, array(
+                'attr' =>
+                array('class' => 'form-control')
+            ))
+            ->add('save', SubmitType::class, array(
+                'label' => 'Update',
+                'attr' => array('class' => 'btn btn-info btn-block mt-3')
+            ))->getForm();
+
+        $form->handleRequest($request);
+
+        if ($form->isSubmitted() && $form->isValid())
+        {
+            $entityManager = $this->getDoctrine()->getManager();
+            $entityManager->flush();
+
+            return $this->redirectToRoute('index');
+        }
+
+        return $this->render('posts/edit.html.twig', array('form' => $form->createView() ));
+    }
+
+    /**
+     * @Route("/posts/{id}/destroy")
+     * @Method({"DELETE"})
+     */
+    public function destroy(Request $request, $id)
     {
         $post = $this->getDoctrine()->getRepository(Post::class)->find($id);
         
-        return $this->render('posts/edit.html.twig', array('post' => $post ));
+        $entityManager = $this->getDoctrine()->getManager();
+        $entityManager->remove($post);
+        $entityManager->flush();
+
+        $response = new Response();
+        $response->send();
     }
 }
